@@ -1,0 +1,154 @@
+
+# Experiment Setup, Logging Specifications, Environment
+experiment:
+  description: |
+    > Trying to reduce annotation in biomedical settings.
+  id: "0000b"
+  name: 'unet_2d_baseline'
+  project: '3D_segmentation'
+  debug:                                            # (Correct Alignment)
+    mode: False                                     # < Check
+    wandb: True                                     # < Check
+    save: True                                      # < Check
+    break_train_iter: False                         # < Check
+    break_test_iter: False                          # < Check
+    batch: 1
+    loss: 0
+    metrics: 1
+    stats: 2
+    visualize: 1
+    visualize_vals:
+      visualize_test: False
+      num_exs_per_batch: 5
+    test_every_n_epochs: 1
+  # debug:  # Fit mini-batch settings
+  #   mode: True  # <!CHANGE
+  #   wandb: False
+  #   save: False 
+  #   break_train_iter: True
+  #   break_test_iter: True
+  #   batch: 1
+  #   loss: 0
+  #   metrics: 1
+  #   stats: 2
+  #   visualize: 1
+  #   visualize_vals:
+  #     visualize_test: False
+  #     num_exs_per_batch: 2
+  #   test_every_n_epochs: 10
+  seed: 310
+  iter_print_interval: 100
+
+
+# Experiment Global Data Specifications (defines what an example is)
+data:  # describing project-wide data specifications
+  classnames: ['a,d'] # ['a', 'd', 'c']
+  examples:
+    stack_size: 1  # odd
+    step_size: 8
+    frame_step: 2  # make examples out of every 'frame_step' frame
+    labeled_example_idxs: [-1]
+    overlap: 6  # end crop_size = crop.x + 2*ovelap
+    img_resize:  [1500, 2500]  # hxw
+    crop_size:  [500, 500]   # hxw
+    train_labeled: 0.5  # percentage of examples with labels in it
+  labels:
+    stack_cover: 1
+    g_hmap:
+      radius: 2
+      std: .7
+
+
+# Results, Metric Specifications (what predictions count as right or wrong?)
+results:
+  decode:
+    max_kernel_size: 3
+    topk: 10
+    confidence_threshold: 0.2
+    distance_threshold: 5
+  metrics:
+    bb_size: 7  # odd is best or else truncated
+    iou_thresh: 0.5
+
+
+# Training Specifications
+train:
+  batch_size: 11   # <!CHANGE
+  shuffle: True
+  start_epoch: 1
+  epochs: 40
+  
+  optimizer:
+    name: 'sgd'  # sgd, nesterov, adam
+    lr: .00008
+    momentum: 0.9
+    wt_decay: 0.0001
+    adam:
+      betas: [0.9, 0.999]
+    
+  scheduler:
+    name: 'step'
+    factor: 0.1
+    plateau:
+      patience: 10
+    step:
+      steps: [0.25, 0.65]
+
+  input: [512,512]
+  transforms:  # resize (req for batch creation!): even dims
+    - [resize, [512,512]]
+    - [togray, False]
+    - [hflip, 0.5]
+    - [vflip, 0.5]
+    - [colorjitter, [0, 0, 0, 0]]
+    - [totensor, True]
+    # - [normmeanstd, [0.348496052065453, 0.06268530318102279]]
+    - [normmeanstd, [0.61364073841, 0.17232833767, 0.56293109384, 
+                  0.08143608083, 0.04988919907, 0.09202036151]]
+                  # normmean must be LAST
+
+
+# Testing Specifications
+test:
+  batch_size: 11 # 200
+  transforms:   # resize = even if dims are the same (batch creation depends on)
+    - [resize, [512,512]]
+    - [togray, False]
+    - [hflip, 0]
+    - [vflip, 0]
+    - [totensor, True]
+    # - [normmeanstd, [0.348496052065453, 0.06268530318102279]]
+    - [normmeanstd, [0.61364073841, 0.17232833767, 0.56293109384, 
+                  0.08143608083, 0.04988919907, 0.09202036151]]
+
+
+# Model / Criterion / Other nn.Module Specifications
+model:
+  name: 'hourglass'
+  num_layers: 2
+  label_downsample_factor: 4
+  output_structure:
+    up_conv:              # list len also serves as layer count
+      filter_counts: [256, 128, 64]
+    head_conv: 64  # num_channels for conv layer before final output
+    heads:               # <================ NEEDS CHANGE FOR HM IMPLEMENTATION
+      'heatmap': 1   # used as num_classes (not incl bg)
+      # 'offsets': 0  # can be 0 or 2
+  
+  loss:
+    lossweights:
+      'focal': 1.
+      'offsets': 1.
+    focalloss:
+      alpha: 2.
+      beta: 4.
+      poscomp_weight: 1.
+      negcomp_weight: 1.
+    regressionloss:
+      offsets: 'L1'
+    penalty_ring:  # radius = 0 to turn off
+      radius: 0
+      thickness: 2
+      penalty_factor: 5.
+    
+  
