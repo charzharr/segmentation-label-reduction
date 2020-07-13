@@ -31,12 +31,17 @@ if [ "$USER" == "yzhang46" ]; then
         . ./scripts/wandb_login.sh
         echo -e "\n>>> Done logging in to W&B\n"
 
-        # Run
-        cd ~/_ANTS/src
+        cd ~/_ANNO/src
 
 else
 
-        cd "~/Desktop/[Project] Ant Pathology/ANTS/src"
+        cd "/Users/charzhar/Desktop/[Project] Annotation Reduction/_ANNO/"
+
+        echo -e "\n>>> Installing Python requirements\n"
+        pip3 install -r requirements.txt
+        echo -e "\n>>> Done installing Python requirements\n"
+        
+        cd "/Users/charzhar/Desktop/[Project] Annotation Reduction/_ANNO/src"
 
 fi
 
@@ -51,7 +56,7 @@ echo -e "=-=-=-=-=-=-=-=-=-=-=-=-=\n"
 
 
 python3 -u train.py \
-        --config "./experiments/hourglass2d/config.yaml" \
+        --config "./experiments/baseline2d/config.yaml" \
         --checkpoint "" \
         --user $USER  \
         --gpu $SGE_HGR_gpu_card

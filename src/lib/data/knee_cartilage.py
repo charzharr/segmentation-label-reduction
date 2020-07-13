@@ -2,7 +2,16 @@
 import sys, os
 import pandas as pd
 import pickle
+import PIL
+import torch
 
+
+def encode_Y(mask_tensor):
+    assert isinstance(mask_tensor, torch.Tensor)
+    ret = torch.zeros((5, *mask_tensor.shape[-2:]))
+    for channel, val in enumerate((0, 50, 100, 150, 200)):
+        ret[channel,...] = mask_tensor.eq(val).float()
+    return ret
 
 def get_df(path, df_file='df.pd'):
     """ Returns the knee cartilage dataset as a df. """
@@ -38,8 +47,7 @@ def get_df(path, df_file='df.pd'):
 
     return df
 
-
-
+        
     
 
 

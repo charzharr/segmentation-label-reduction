@@ -33,7 +33,9 @@ class StopWatch:
         
         elapsed = self.stops[name] - self.starts[name]
         if elapsed > 0:
-            if elapsed > 60:
+            if elapsed > 4200:
+                print(f"StopWatch({name}) took {elapsed/3600:.2f} hrs")
+            elif elapsed > 60:
                 print(f"StopWatch({name}) took {elapsed/60:.2f} min")
             else:
                 print(f"StopWatch({name}) took {elapsed:.2f} sec")
